@@ -7,23 +7,22 @@
  */
 class DatabaseConnection
 {
-    const string HOST = 'mysql';
-    const string DB_NAME = 'project';
-    const int PORT = 3306;
-    const string USER = 'my_user';
-    const string PASSWORD = 'my_password';
-
     /**
      * @var PDO
      */
     private PDO $pdo;
 
+    /**
+     * @throws Exception
+     */
     public function __construct()
     {
+        $env = $this->loadEnv('.env');
+
         $this->pdo = new PDO(
-            'mysql:host=' . self::HOST . ';port=' . self::PORT . ';dbname=' . self::DB_NAME,
-            self::USER,
-            self::PASSWORD
+            'mysql:host=' . $env['DB_HOST'] . ';port=' . $env['DB_PORT'] . ';dbname=' . $env['DB_NAME'],
+            $env['DB_USER'],
+            $env['DB_PASSWORD']
         );
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
@@ -43,5 +42,29 @@ class DatabaseConnection
         }
 
         return $results;
+    }
+
+    /**
+     * @param string $file
+     * @return array
+     * @throws Exception
+     */
+    function loadEnv(string $file): array
+    {
+        $env = [];
+        if (file_exists($file)) {
+            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (str_starts_with($line, '#')) {
+                    continue;
+                }
+                list($key, $value) = explode('=', $line, 2);
+                $env[trim($key)] = trim($value);
+            }
+        } else {
+            throw new Exception('File .env not found.');
+        }
+
+        return $env;
     }
 }
